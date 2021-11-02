@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.5.31"
     kotlin("plugin.serialization") version "1.5.31"
+    application
 }
 
 group = "de.jjbr.misc"
@@ -27,4 +28,8 @@ tasks.test {
 
 tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+application {
+    mainClassName = "git.loc.wizard.MainKt"
 }

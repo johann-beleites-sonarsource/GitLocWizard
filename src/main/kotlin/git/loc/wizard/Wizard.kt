@@ -6,7 +6,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import com.github.ajalt.clikt.parameters.options.validate
+import com.github.ajalt.clikt.parameters.types.path
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -17,10 +17,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.appendText
-import kotlin.io.path.createFile
 import kotlin.io.path.deleteIfExists
-import kotlin.io.path.isRegularFile
-import kotlin.io.path.notExists
 import kotlin.io.path.readLines
 import kotlin.io.path.readText
 import kotlin.system.exitProcess
@@ -31,19 +28,17 @@ class Wizard : CliktCommand() {
     val inputFile by option(
         "-i", "--input-file",
         help = "File containing a list of git repos to analyze (1 per line)"
-    ).convert {
-        Path.of(it)
-    }.required()
+    ).path(
+        mustExist = true,
+        canBeFile = true,
+        canBeDir = false,
+        mustBeReadable = true
+    ).required()
 
     val outputFile by option(
         "-o", "--output-file",
         help = "File to write cloc output to"
-    ).convert {
-        Path.of(it)
-    }.validate {
-        require(it.notExists() || it.deleteIfExists())
-        it.createFile()
-    }
+    ).path(canBeDir = false)
 
     val library by option(
         "-l", "--library",
@@ -93,11 +88,6 @@ class Wizard : CliktCommand() {
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
-        if (!inputFile.isRegularFile()) {
-            println("Input file '$inputFile' is not a regular file!")
-            exitProcess(1)
-        }
-
         if (raw && library != null) {
             System.err.println("Cannot use --raw with --library-file")
             exitProcess(2)
@@ -166,6 +156,7 @@ class Wizard : CliktCommand() {
             libNN.writeToFile()
         }
 
+        outputFile?.deleteIfExists()
         if (raw) {
             results.map { (clocStdOut, url) ->
                 "######## $url ########\n$clocStdOut"
